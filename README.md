@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/img/orbofu.jpg" alt="orbofu image">
+  <img src="/img/orbofu.jpg" alt="orbofu image" width="50%">
 </p>
 
 # Orbofu
