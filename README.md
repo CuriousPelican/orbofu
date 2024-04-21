@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="/img/orbofu.jpg" alt="orbofu image">
+</p>
+
 # Orbofu
 
 Orbofu stands for "ORdinateur de BOrd pour FUsée à eau" (meaning in french water rocket flight computer).
@@ -13,6 +17,7 @@ Easly built a water rocket flight computer with cheap and available parts and li
 # Hardware
 
 ## Bill Of Materials
+
 - ESP32 - I used a lolin S3 pro and C3 pico, both work well, connect over usb-C and have a dedicated I²C port and a battery port with a charging circuit, meaning less soldering
 - BME390 barometric sensor (used as altimeter) - Cheaper less accurate alternatives like the BME388 should work with minimal changes to the code
 - Cheap & lightweight Servomotor (soldering probably required for that one)
@@ -22,6 +27,7 @@ Easly built a water rocket flight computer with cheap and available parts and li
 Price estimate: not sure for now
 
 ## Case
+
 I plan to use raketfuedrockets' Phoenix 3D or aircommandrockets' modified version of it.
 
 # Software
@@ -30,6 +36,6 @@ I plan to use raketfuedrockets' Phoenix 3D or aircommandrockets' modified versio
 
 ### A small footnote about github copilot
 
-Any use of this project's code by GitHub Copilot, past or present, is done without my permission.  I do not consent to GitHub's use of this project's code in Copilot.
+Any use of this project's code by GitHub Copilot, past or present, is done without my permission. I do not consent to GitHub's use of this project's code in Copilot.
 
 ![Logo of the GiveUpGitHub campaign](https://sfconservancy.org/static/img/GiveUpGitHub.png)
