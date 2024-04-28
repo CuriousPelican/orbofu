@@ -18,7 +18,7 @@ Easily built a water rocket flight computer with cheap and available parts and l
 
 ### Bill Of Materials
 
-- ESP32 - I used a lolin S3 pro and C3 pico, both work well, connect over usb-C and have a dedicated I²C port and a battery port with a charging circuit, meaning less soldering
+- ESP32 - I used a lolin S3 pro and I'm going to try a C3 pico to make the computer smaller and lighter, both connect over usb-C and have a dedicated I²C port and a battery port with a charging circuit, meaning less soldering. Any ESP32 S3 should easily work (minimal modifications to platformio.ini) and other ESP32 models might require a little more work. Edit: for now, it's not working :( so I switching boards
 - BME390 barometric sensor (used as altimeter) - Cheaper less accurate alternatives like the BME388 should work with minimal changes to the code
 - Cheap & lightweight Servomotor (soldering probably required for that one)
 - 3.7V small battery (I used 250mAh ones) - **BE CAREFUL WITH THE POLARITY**
