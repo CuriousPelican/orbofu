@@ -16,13 +16,17 @@ function initWebSocket() {
 
 function onOpen(event) {
   console.log("Connection opened");
-  // update connection status
+  // Update connection status
+  document.getElementById("connection-sensor").innerHTML = "Connected";
+  document.getElementById("connection-sensor").style.color = "#f582ae";
 }
 
 function onClose(event) {
   console.log("Connection closed");
   setTimeout(initWebSocket, 2000);
-  // update connection status
+  // Update connection status
+  document.getElementById("connection-sensor").innerHTML = "Disconnected";
+  document.getElementById("connection-sensor").style.color = "#8bd3dd";
 }
 
 function onMessage(event) {}
@@ -50,7 +54,3 @@ function downloadFileWithTimestamp(url) {
   link.click();
   document.body.removeChild(link);
 }
-
-// Make buttons appear/disappear
-
-// Update connection & last flight apogee

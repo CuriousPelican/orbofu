@@ -5,6 +5,8 @@
 #include <Adafruit_Sensor.h>
 #include "Adafruit_BMP3XX.h"
 #include <ESP32Servo.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 
 
 
@@ -55,7 +57,7 @@ float start_abs_alt;
 float start_temp;
 float start_pres;
 
-float apogee_alt;
+float apogee_alt = 0.0;
 float max_alt;
 
 // Flight and time variables
@@ -76,6 +78,9 @@ bool logging = false; // True when logging data - not a setting to disable/enabl
 // SG90 Servo introduction
 Servo parachute_servo;
 
+// AsyncWebServer server & websocket
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
 
 // -------------------------------- INITILIZATIONS --------------------------------
@@ -124,6 +129,18 @@ void initLittleFS() {
   }
 }
 
+// Initialize Websocket
+void initWebSocket() {
+  ws.onEvent(onEvent);
+  server.addHandler(&ws);
+}
+
+// Initialize Root URL
+void initRootURL() {
+  Serial.print("test");
+}
+
+
 
 // -------------------------------- HELPER FUNCTIONS --------------------------------
 
@@ -140,6 +157,17 @@ float getAltitude() {
   return (273.15 + start_temp) / 0.0065 * (1.0 - pow(pres / start_pres, 0.1903));
 }
 
+// Starts BMP sensors & updates start_ variables
+void startBMP(){
+  if (! bmp.performReading()) {
+    Serial.println("Failed to perform reading :(");
+    return;
+  }
+  start_temp = bmp.temperature; // return temperature in °C
+  start_pres = bmp.pressure / 100.0F; // returns pressure in hPa
+  start_abs_alt = bmp.readAltitude(SeaLevelPressure_hPa); //returns approximative absolute altitude
+}
+
 // Logs in data.csv relative_time,pres,alt, (last row reserved for 1st data point with temperature)
 void logData() {
   File file = LittleFS.open("/data.csv", "a");
@@ -154,17 +182,62 @@ void logData() {
 
 
 
-// -------------------------------- START & SETUP --------------------------------
+// -------------------------------- WEBSERVER FUNCTIONS --------------------------------
+// See https://github.com/me-no-dev/ESPAsyncWebServer for docs
 
-void startBMP(){
-  if (! bmp.performReading()) {
-    Serial.println("Failed to perform reading :(");
-    return;
-  }
-  start_temp = bmp.temperature; // return temperature in °C
-  start_pres = bmp.pressure / 100.0F; // returns pressure in hPa
-  start_abs_alt = bmp.readAltitude(SeaLevelPressure_hPa); //returns approximative absolute altitude
+// Notifies all clients with a message
+void notifyClients(String message) {
+  ws.textAll(message);
 }
+
+// Serves root URL files
+void serveRootURL() {
+  // Server index.html when connecting
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(LittleFS, "/index.html", "text/html");
+  });
+  // Serve static files (css & js)
+  server.serveStatic("/", LittleFS, "/");
+}
+
+// Handles websockets messages
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
+
+}
+
+// Handles websockets requests
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  switch (type) {
+    case WS_EVT_CONNECT:
+      Serial.print("\n[WebSocket] WebSocket client ");
+      // -> operator same as . operator but when using pointer
+      Serial.print(client->id());
+      Serial.print(" connected from ");
+      Serial.println(client->remoteIP());
+      //Notify client of latest apogee when it first connects
+      notifyClients((String) apogee_alt); // Not most efficient conversion compared to dtostrf but no import needed
+      break;
+    case WS_EVT_DISCONNECT:
+      Serial.print("\n[WebSocket] WebSocket client ");
+      Serial.print(client->id());
+      Serial.println(" disconnected");
+      break;
+    case WS_EVT_DATA:
+      // What to do when receiving data
+      handleWebSocketMessage(arg, data, len);
+      break;
+    case WS_EVT_PONG:
+      // Nothing to do on a pong request
+      break;
+    case WS_EVT_ERROR:
+      Serial.println("\n[WebSocket] WebSocket error event");
+      break;
+  }
+}
+
+
+
+// -------------------------------- SETUP --------------------------------
 
 void setup() {
   Serial.begin(115200);
@@ -173,6 +246,12 @@ void setup() {
   initWiFi();
   initServo();
   initLittleFS();
+  initWebSocket();
+  
+  // Serves root URL
+  serveRootURL();
+  // Start server
+  server.begin();
 
   // BMP Tests
   startBMP();
@@ -203,6 +282,8 @@ void setup() {
 // -------------------------------- LOOP --------------------------------
 
 void loop() {
+  // Note: non-blocking code wasn't mandatory (still cleaner) because webserver is asynchronous
+
   // Stop and start flight on user demand
   if (start_flight) {
     // Initiate variables
@@ -233,7 +314,6 @@ void loop() {
     start_flight = false;
     flight_triggered = true;
   }
-  // Update to user informing flight_triggered 
 
   // If flight triggered and not landed
   if (flight_triggered && !landed) {
@@ -280,7 +360,6 @@ void loop() {
       }
     }
   }
-  // Update to user to download & relaunch
 
   // Stop flight on user demand
   if (stop_flight) {
@@ -288,4 +367,7 @@ void loop() {
     stop_flight = false;
     flight_triggered = false;
   }
+
+  // Limits number of connected clients (disconnects oldest if too many clients)
+  ws.cleanupClients();
 }
