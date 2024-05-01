@@ -65,7 +65,6 @@ bool start_flight = false;
 bool stop_flight = false;
 bool flight_triggered = false;
 bool launched = false;
-bool landed = true;
 bool apogee_detected = false;
 
 unsigned int timer_abs;
@@ -292,7 +291,6 @@ void loop() {
     apogee_alt = 0.0;
     max_alt = 0.0;
     launched = false;
-    landed = false;
     apogee_detected = false;
     logging = false;
     timer_abs = millis();
@@ -316,8 +314,8 @@ void loop() {
     flight_triggered = true;
   }
 
-  // If flight triggered and not landed
-  if (flight_triggered && !landed) {
+  // If flight triggered
+  if (flight_triggered) {
     if (millis() > timer_abs) {
       // Avoid too many checks
       timer_abs = millis()+LOOP_PERIOD;
@@ -331,7 +329,7 @@ void loop() {
       alt = getAltitude();
 
       // Check for a launch
-      if (!launched && !landed && (alt>=LAUNCH_MARGIN)) {
+      if (!launched && (alt>=LAUNCH_MARGIN)) {
         launched = true;
         logging = true; // Start logging data
         timer_start_abs = millis()-LOOP_PERIOD; // Started one iteration before
@@ -350,9 +348,8 @@ void loop() {
       }
 
       // Check if landed
-      if (launched && !landed && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.01)){
+      if (launched && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.01)){
         logging = false;
-        landed = true;
         flight_triggered = false;
         notifyClients((String) apogee_alt);
       }
