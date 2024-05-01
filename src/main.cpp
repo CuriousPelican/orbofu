@@ -61,7 +61,7 @@ float max_alt;
 // Flight and time variables
 bool flight_triggered = false;
 bool launched = false;
-bool landed = false;
+bool landed = true;
 bool apogee_detected = false;
 
 unsigned int timer_abs;
@@ -130,13 +130,15 @@ float getAltitude() {
 }
 
 // Logs in data.csv relative_time,pres,alt, (last row reserved for 1st data point with temperature)
-void logData(File &file) {
+void logData() {
+  File file = LittleFS.open("/data.csv", "a");
   file.print(timer_relative);
   file.print(",");
   file.print(pres, 2);
   file.print(",");
   file.print(alt, 2);
   file.println(",,");
+  file.close();
 }
 
 
@@ -196,18 +198,19 @@ void setup() {
 
 void loop() {
 
+  // Start
   if (flight_triggered) {
     // Initiate variables
     startBMP();
     apogee_alt = 0.0;
     max_alt = 0.0;
-    flight_triggered = true;
     launched = false;
     landed = false;
     apogee_detected = false;
     logging = false;
     timer_abs = millis();
     timer_relative = 0;
+    flight_triggered = false;
 
     // File creation with start variables (incl temperature)
     File file = LittleFS.open("/data.csv", "w");
@@ -220,59 +223,54 @@ void loop() {
     file.print(",");
     file.print(start_temp, 2);
     file.println();
+    file.close();
+  }
+  // Update to user informing flight_triggered 
 
-    // Update to user informing flight_triggered 
+  // If not landed
+  if (!landed) {
+    if (millis() > timer_abs) {
+      // Avoid too many checks
+      timer_abs = millis()+LOOP_PERIOD;
+      if (launched) {
+        timer_relative = millis()-timer_start_abs; // = timer_relative+LOOP_PERIOD maybe less precise ?
+      }
 
-    // While not landed
-    while (!landed) {
-      if (millis() > timer_abs) {
-        // Avoid too many checks
-        timer_abs = millis()+LOOP_PERIOD;
-        if (launched) {
-          timer_relative = millis()-timer_start_abs; // = timer_relative+LOOP_PERIOD maybe less precise ?
-        }
+      // Get the altitude
+      float last_alt = alt;
+      // float last_pres = pres;
+      alt = getAltitude();
 
-        // Get the altitude
-        float last_alt = alt;
-        // float last_pres = pres;
-        alt = getAltitude();
+      // Check for a launch
+      if (!launched && !landed && (alt>=LAUNCH_MARGIN)) {
+        launched = true;
+        logging = true; // Start logging data
+        timer_start_abs = millis()-LOOP_PERIOD; // Started one iteration before
+        timer_relative = LOOP_PERIOD;
+      }
 
-        // Check for a launch
-        if (!launched && !landed && (alt>=LAUNCH_MARGIN)) {
-          launched = true;
-          logging = true; // Start logging data
-          timer_start_abs = millis()-LOOP_PERIOD; // Started one iteration before
-          timer_relative = LOOP_PERIOD;
-        }
+      // Check if altitude is higher than max altitude
+      if (launched && (alt >= max_alt)) {
+        max_alt = alt;
+      }
+      // Check for apogee & trigger parachute
+      if (launched && !apogee_detected && (alt <= (max_alt-APOGEE_MARGIN))) {
+        apogee_detected = true;
+        apogee_alt = max_alt;
+        parachute_servo.write(parachute_servo_open_pos);
+      }
 
-        // Check if altitude is higher than max altitude
-        if (launched && (alt >= max_alt)) {
-          max_alt = alt;
-        }
-        // Check for apogee & trigger parachute
-        if (launched && !apogee_detected && (alt <= (max_alt-APOGEE_MARGIN))) {
-          apogee_detected = true;
-          apogee_alt = max_alt;
-          parachute_servo.write(parachute_servo_open_pos);
-        }
+      // Check if landed
+      if (launched && !landed && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.01)){
+        logging = false;
+        landed = true;
+      }
 
-        // Check if landed
-        if (launched && !landed && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.01)){
-          logging = false;
-          landed = true;
-        }
-
-        // Calling logging function
-        if (logging and timer_relative<MAX_TIME_LOGGING) {
-          logData(file);
-        }
+      // Calling logging function
+      if (logging and timer_relative<MAX_TIME_LOGGING) {
+        logData();
       }
     }
-    
-    // End loop
-    file.close();
-    flight_triggered = false;
-
-    // Update to user to download & relaunch
   }
+  // Update to user to download & relaunch
 }
