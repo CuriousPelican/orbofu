@@ -46,11 +46,9 @@ I plan to use raketfuedrockets' Phoenix 3D or aircommandrockets' modified versio
 - launch the rocket, orbofu will now log data and trigger the parachute at the right time (hopefully)
 - reconnect to the web interface when you get your rocket back, **DOWNLOAD LAST FLIGHT DATA** if you want to keep it and start again if you want to
 
-- (as a bonus I might add AsyncElegantOTA for eay updates for those interested)
-
 # Ressources used & useful links
 
-## A small footnote about github copilot
+### A small footnote about github copilot
 
 Any use of this project's code by GitHub Copilot, past or present, is done without my permission. I do not consent to GitHub's use of this project's code in Copilot.
 
