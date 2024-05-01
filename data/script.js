@@ -2,6 +2,8 @@ var gateway = `ws://${window.location.hostname}/ws`;
 var websocket;
 window.addEventListener("load", onload);
 
+// -------------------------------- WEBSOCKETS & PAGE LOADING --------------------------------
+
 function onload(event) {
   initWebSocket();
 }
@@ -29,7 +31,7 @@ function onClose(event) {
   document.getElementById("connection-sensor").style.color = "#8bd3dd";
 }
 
-function onMessage(event) {}
+// -------------------------------- HELPER FUNCTIONS --------------------------------
 
 // Script to download & rename
 function downloadFileWithTimestamp(url) {
@@ -54,3 +56,20 @@ function downloadFileWithTimestamp(url) {
   link.click();
   document.body.removeChild(link);
 }
+
+// Returns if convertible to float or not
+function isConvertibleToFloat(str) {
+  const num = parseFloat(str);
+  return !isNaN(num);
+}
+
+// -------------------------------- PAGE INTERACTION --------------------------------
+
+function onMessage(event) {
+  // if message is about flight triggered
+  // else message is about altitude
+}
+
+// functions to make buttons appear/disappear
+
+// functions to use buttons

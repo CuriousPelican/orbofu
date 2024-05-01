@@ -214,8 +214,9 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       Serial.print(client->id());
       Serial.print(" connected from ");
       Serial.println(client->remoteIP());
-      //Notify client of latest apogee when it first connects
+      // Notify client of latest apogee when it first connects
       notifyClients((String) apogee_alt); // Not most efficient conversion compared to dtostrf but no import needed
+      // Sends latest data.csv
       break;
     case WS_EVT_DISCONNECT:
       Serial.print("\n[WebSocket] WebSocket client ");
@@ -352,6 +353,8 @@ void loop() {
       if (launched && !landed && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.01)){
         logging = false;
         landed = true;
+        flight_triggered = false;
+        notifyClients((String) apogee_alt);
       }
 
       // Calling logging function
