@@ -59,6 +59,8 @@ float apogee_alt;
 float max_alt;
 
 // Flight and time variables
+bool start_flight = false;
+bool stop_flight = false;
 bool flight_triggered = false;
 bool launched = false;
 bool landed = true;
@@ -198,8 +200,8 @@ void setup() {
 
 void loop() {
 
-  // Start
-  if (flight_triggered) {
+  // Stop and start flight on user demand
+  if (start_flight) {
     // Initiate variables
     startBMP();
     apogee_alt = 0.0;
@@ -210,7 +212,6 @@ void loop() {
     logging = false;
     timer_abs = millis();
     timer_relative = 0;
-    flight_triggered = false;
 
     // File creation with start variables (incl temperature)
     File file = LittleFS.open("/data.csv", "w");
@@ -224,11 +225,15 @@ void loop() {
     file.print(start_temp, 2);
     file.println();
     file.close();
+
+    // Change state
+    start_flight = false;
+    flight_triggered = true;
   }
   // Update to user informing flight_triggered 
 
-  // If not landed
-  if (!landed) {
+  // If flight triggered and not landed
+  if (flight_triggered && !landed) {
     if (millis() > timer_abs) {
       // Avoid too many checks
       timer_abs = millis()+LOOP_PERIOD;
@@ -273,4 +278,11 @@ void loop() {
     }
   }
   // Update to user to download & relaunch
+
+  // Stop flight on user demand
+  if (stop_flight) {
+    // Change state
+    stop_flight = false;
+    flight_triggered = false;
+  }
 }
