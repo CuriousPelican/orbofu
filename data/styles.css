@@ -1,0 +1,79 @@
+body {
+  font-size: 2em;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  color: #001858;
+  background-color: #fef6e4;
+  font-family: "proxima-nova", "-apple-system", "system-ui",
+    "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial",
+    "sans-serif", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+#main-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh; /* Set the container height to 100% of the viewport height */
+  margin: 0;
+  padding: 0;
+}
+
+#text-div {
+  height: 50%;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  margin: 0.3em;
+  color: #001858;
+}
+
+p {
+  margin: 0.5em;
+}
+
+#warn-download {
+  font-size: 0.6em;
+}
+
+#controls-div {
+  height: 50%;
+  display: flex;
+  flex-direction: column;
+  /* justify-content: center; */
+  margin-top: 1em;
+}
+
+button {
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0.4em 2em;
+  border: none;
+  outline: none;
+  border-radius: 1em;
+  color: white;
+  font-size: 1em;
+  font-weight: bold;
+  color: #001858;
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+}
+
+#start-button {
+  background: #f582ae;
+}
+
+#stop-button {
+  background: #8bd3dd;
+}
+
+#download-button {
+  background: #001858;
+  color: #fef6e4;
+}

@@ -114,6 +114,15 @@ void initServo() {
   Serial.println("\n[Servo] Servo Initilized !");
 }
 
+// Initialize LittleFS
+void initLittleFS() {
+  if (!LittleFS.begin()) {
+    Serial.println("\n[LittleFS] An Error has occurred while mounting LittleFS");
+  }
+  else {
+    Serial.println("\n[LittleFS] LittleFS mounted successfully");
+  }
+}
 
 
 // -------------------------------- HELPER FUNCTIONS --------------------------------
@@ -163,6 +172,7 @@ void setup() {
   initBMP();
   initWiFi();
   initServo();
+  initLittleFS();
 
   // BMP Tests
   startBMP();
@@ -186,12 +196,6 @@ void setup() {
     parachute_servo.write(parachute_servo_close_pos);
     delay(2000);
   }
-
-  // LittleFS Tests
-  if (!LittleFS.begin()) {
-    Serial.println("[LittleFS] An Error has occurred while mounting LittleFS");
-    return;
-  }
 }
 
 
@@ -199,7 +203,6 @@ void setup() {
 // -------------------------------- LOOP --------------------------------
 
 void loop() {
-
   // Stop and start flight on user demand
   if (start_flight) {
     // Initiate variables

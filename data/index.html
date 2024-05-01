@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orbofu</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <div id="main-div">
+      <div class="centered" id="text-div">
+        <div id="title-div">
+          <h1>Orbofu</h1>
+        </div>
+        <div id="sensors-div">
+          <p>Connection status: <span id="connection-sensor">-</span></p>
+          <p>Last flight apogee: <span id="apogee-sensor">-</span></p>
+        </div>
+        <p id="warn-download">
+          Warning ! Download latest flight data BEFORE starting again !
+        </p>
+      </div>
+      <div class="centered" id="controls-div">
+        <button onclick="" id="download-button">Download Data</button>
+        <button onclick="" id="start-button">Start Flight</button>
+        <button onclick="" id="stop-button" disabled>Stop Flight</button>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
