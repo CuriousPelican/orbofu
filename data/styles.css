@@ -35,6 +35,10 @@ p {
   margin: 0.5em;
 }
 
+span {
+  font-weight: bold;
+}
+
 #warn-download {
   font-size: 0.6em;
 }
@@ -67,13 +71,16 @@ button {
 
 #start-button {
   background: #f582ae;
+  display: none;
 }
 
 #stop-button {
   background: #8bd3dd;
+  display: none;
 }
 
 #download-button {
   background: #001858;
   color: #fef6e4;
+  display: none;
 }

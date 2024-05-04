@@ -81,6 +81,10 @@ Servo parachute_servo;
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
+// message varaible to store messages between client & server
+String message = "";
+
+
 
 // -------------------------------- INITILIZATIONS --------------------------------
 
@@ -201,7 +205,25 @@ void serveRootURL() {
 
 // Handles websockets messages
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-
+  AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  //the whole message is in a single frame and we got all of it's data - see docs
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+    data[len] = 0;
+    message = (char*) data; // convert 8-bit unsigned integers to char
+    if (message == "true") {
+      flight_triggered = true;
+      notifyClients("true");
+      Serial.println("\n[WebSocket] Confirmation Flight Armed");
+    }
+    else if (message == "false") {
+      flight_triggered = false;
+      notifyClients("false");
+      Serial.println("\n[WebSocket] Confirmation Flight Disarmed");
+    }
+    else {
+      Serial.println("\n[WebSocket] Message received but not true neither false, ignoring");
+    }
+  }
 }
 
 // Handles websockets requests
@@ -214,6 +236,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       Serial.print(" connected from ");
       Serial.println(client->remoteIP());
       // Notify client of latest apogee when it first connects
+      notifyClients((String) flight_triggered);
       notifyClients((String) apogee_alt); // Not most efficient conversion compared to dtostrf but no import needed
       // Sends latest data.csv
       break;
@@ -247,7 +270,7 @@ void setup() {
   initServo();
   initLittleFS();
   initWebSocket();
-  
+
   // Serves root URL
   serveRootURL();
   // Start server
@@ -255,7 +278,6 @@ void setup() {
 
   // BMP Tests
   startBMP();
-  // Not using <stdio.h> for memory reasons
   Serial.print("Start temperature = ");
   Serial.print(start_temp);
   Serial.println(" °C");
@@ -312,6 +334,10 @@ void loop() {
     // Change state
     start_flight = false;
     flight_triggered = true;
+
+    // Send new apogee (0.0) & flight_triggered true to client
+    notifyClients((String) flight_triggered);
+    notifyClients((String) apogee_alt);
   }
 
   // If flight triggered
@@ -366,6 +392,10 @@ void loop() {
     // Change state
     stop_flight = false;
     flight_triggered = false;
+    
+    // Send new apogee (probably 0.0) & flight_triggered false to client
+    notifyClients((String) flight_triggered);
+    notifyClients((String) apogee_alt);
   }
 
   // Limits number of connected clients (disconnects oldest if too many clients)
