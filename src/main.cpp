@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <LittleFS.h>
 #include <WiFi.h>
-#include <Adafruit_Sensor.h>
+#include "Adafruit_Sensor.h"
 #include "Adafruit_BMP3XX.h"
 #include <ESP32Servo.h>
 #include <AsyncTCP.h>
@@ -132,17 +132,6 @@ void initLittleFS() {
   }
 }
 
-// Initialize Websocket
-void initWebSocket() {
-  ws.onEvent(onEvent);
-  server.addHandler(&ws);
-}
-
-// Initialize Root URL
-void initRootURL() {
-  Serial.print("test");
-}
-
 
 
 // -------------------------------- HELPER FUNCTIONS --------------------------------
@@ -238,7 +227,6 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       // Notify client of latest apogee when it first connects
       notifyClients((String) flight_triggered);
       notifyClients((String) apogee_alt); // Not most efficient conversion compared to dtostrf but no import needed
-      // Sends latest data.csv
       break;
     case WS_EVT_DISCONNECT:
       Serial.print("\n[WebSocket] WebSocket client ");
@@ -262,8 +250,15 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 
 // -------------------------------- SETUP --------------------------------
 
+// Initialize Websocket
+void initWebSocket() {
+  ws.onEvent(onEvent);
+  server.addHandler(&ws);
+}
+
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(460800);
+  Serial.println("Setup started !");
 
   initBMP();
   initWiFi();
@@ -392,7 +387,7 @@ void loop() {
     // Change state
     stop_flight = false;
     flight_triggered = false;
-    
+
     // Send new apogee (probably 0.0) & flight_triggered false to client
     notifyClients((String) flight_triggered);
     notifyClients((String) apogee_alt);
