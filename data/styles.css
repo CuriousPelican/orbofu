@@ -57,16 +57,16 @@ button {
   align-items: center;
   text-decoration: none;
   cursor: pointer;
-  padding: 0.4em 2em;
+  padding: 0.6em 2em;
   border: none;
   outline: none;
-  border-radius: 1em;
+  border-radius: 3em;
   color: white;
   font-size: 1em;
   font-weight: bold;
   color: #001858;
-  margin-top: 0.2em;
-  margin-bottom: 0.2em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
 }
 
 #start-button {
