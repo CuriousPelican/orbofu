@@ -2,16 +2,18 @@ var gateway = `ws://${window.location.hostname}/ws`;
 var websocket;
 window.addEventListener("load", onload);
 
-var flight_triggered = false;
+var flight_triggered = false; // local var to store flight_triggered state (from server)
 var apogee = 0.0;
 
 // -------------------------------- WEBSOCKETS & PAGE LOADING --------------------------------
 
+// Called on page load
 function onload(event) {
   initWebSocket();
   update_page();
 }
 
+// Configs websocket
 function initWebSocket() {
   console.log("Trying to open a WebSocket connection…");
   websocket = new WebSocket(gateway);
@@ -20,6 +22,7 @@ function initWebSocket() {
   websocket.onmessage = onMessage;
 }
 
+// If websocket connection correctly initiated
 function onOpen(event) {
   console.log("Connection opened");
   // Update connection status
@@ -27,6 +30,7 @@ function onOpen(event) {
   document.getElementById("connection-sensor").style.color = "#f582ae";
 }
 
+// If websocket connection closed (or lost connection)
 function onClose(event) {
   console.log("Connection closed");
   setTimeout(initWebSocket, 2000);
@@ -67,7 +71,7 @@ function isConvertibleToFloat(str) {
   return !isNaN(num);
 }
 
-// Shows/hides buttons & updates apogee and flight status
+// Shows/hides buttons & updates apogee and flight status depending on local js variables status
 function update_page() {
   document.getElementById("apogee-sensor").innerHTML = apogee;
   if (!flight_triggered) {
@@ -87,6 +91,8 @@ function update_page() {
 
 // -------------------------------- PAGE INTERACTION --------------------------------
 
+// Main server --> client communication function
+// updates apogee or flight_triggered local variables based on received message (server variables) & updates page
 function onMessage(event) {
   console.log(event.data);
   message = event.data;
@@ -105,18 +111,22 @@ function onMessage(event) {
   }
 }
 
-// Use buttons
+// Action on download button
 const downloadbutton = document.getElementById("download-button");
 downloadbutton.addEventListener("click", () => {
   console.log("Download button triggered");
   // ask for download
 });
+
+// Action on start button - send "true" to server
 const startbutton = document.getElementById("start-button");
 downloadbutton.addEventListener("click", () => {
   console.log("Start button triggered");
   websocket.send("true");
   // do not change local state of flight_triggered, wait for server confimation
 });
+
+// Action on stop button - send "false" to server
 const stopbutton = document.getElementById("stop-button");
 downloadbutton.addEventListener("click", () => {
   console.log("Stop button triggered");

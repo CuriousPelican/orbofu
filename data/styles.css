@@ -20,6 +20,8 @@ body {
   padding: 0;
 }
 
+/* Text related part */
+
 #text-div {
   height: 50%;
   display: flex;
@@ -28,7 +30,6 @@ body {
 
 h1 {
   margin: 0.3em;
-  color: #001858;
 }
 
 p {
@@ -50,6 +51,8 @@ span {
   /* justify-content: center; */
   margin-top: 1em;
 }
+
+/* Buttons related part */
 
 button {
   width: 100%;

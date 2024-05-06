@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <Wire.h>
+#include <Wire.h> // I2C
 #include <LittleFS.h>
 #include <WiFi.h>
 #include "Adafruit_Sensor.h"
@@ -42,13 +42,13 @@ const float TOUCHDOWN_MARGIN = 1.0; // rocket must be X m above ground to trigge
 // tests & config settings
 bool test_servo = false;
 
-// -------------------------------- DEFINITIONS & TESTS --------------------------------
+// -------------------------------- DEFINITIONS --------------------------------
 
-// BMP introduction
+// BMP definition
 #define SeaLevelPressure_hPa (1013.25)
 Adafruit_BMP3XX bmp;
 
-// Altimeter variables
+// Altimeter variables definition
 float alt;
 float temp;
 float pres;
@@ -60,7 +60,7 @@ float start_pres;
 float apogee_alt = 0.0;
 float max_alt;
 
-// Flight and time variables
+// Flight and time variables definition
 bool start_flight = false;
 bool stop_flight = false;
 bool flight_triggered = false;
@@ -74,14 +74,14 @@ unsigned int timer_start_abs;
 const int MAX_TIME_LOGGING = MAX_DATA_POINTS*LOOP_PERIOD; // time in ms after which logging will stop, default 60s
 bool logging = false; // True when logging data - not a setting to disable/enable data logging !
 
-// SG90 Servo introduction
+// SG90 Servo definition
 Servo parachute_servo;
 
-// AsyncWebServer server & websocket
+// AsyncWebServer server & websocket definition
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
-// message varaible to store messages between client & server
+// message variable to store messages between client & server definition
 String message = "";
 
 
@@ -172,6 +172,47 @@ void logData() {
   file.close();
 }
 
+// Meant to be used in the loop
+// Initializes flight variables & file (flushing preceding) + changes flight_triggered & notifies client
+void startFlight() {
+    // Initiate variables
+  startBMP();
+  apogee_alt = 0.0;
+  max_alt = 0.0;
+  launched = false;
+  apogee_detected = false;
+  logging = false;
+  timer_abs = millis();
+  timer_relative = 0;
+    // File creation with start variables (incl temperature)
+  File file = LittleFS.open("/data.csv", "w");
+  file.println("time,pressure,altitude,temperature");
+  file.print(0);
+  file.print(",");
+  file.print(start_pres, 2); // Print float with 2 decimal places
+  file.print(",");
+  file.print(0.00, 2);
+  file.print(",");
+  file.print(start_temp, 2);
+  file.println();
+  file.close();
+    // Change state
+  flight_triggered = true;
+    // Send new apogee (0.0) & flight_triggered true to client
+  notifyClients((String) flight_triggered);
+  delay(30);
+  notifyClients((String) apogee_alt);
+}
+
+// Meant to be used in the loop - Changes flight_triggered & notifies client
+void stopFlight() {
+    // Change state
+  flight_triggered = false;
+    // Send new apogee (probably 0.0) & flight_triggered false to client
+  notifyClients((String) flight_triggered);
+  notifyClients((String) apogee_alt);
+}
+
 
 
 // -------------------------------- WEBSERVER FUNCTIONS --------------------------------
@@ -182,7 +223,7 @@ void notifyClients(String message) {
   ws.textAll(message);
 }
 
-// Serves root URL files
+// Serves root URL files (static files)
 void serveRootURL() {
   // Server index.html when connecting
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -192,13 +233,13 @@ void serveRootURL() {
   server.serveStatic("/", LittleFS, "/");
 }
 
-// Handles websockets messages
+// Handles websockets messages from client (flight_triggered "true" or "false" + confirmation to client)
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
   AwsFrameInfo *info = (AwsFrameInfo*)arg;
   //the whole message is in a single frame and we got all of it's data - see docs
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
     data[len] = 0;
-    message = (char*) data; // convert 8-bit unsigned integers to char
+    message = (char*) data; // converts 8-bit unsigned integers to char
     if (message == "true") {
       flight_triggered = true;
       notifyClients("true");
@@ -215,7 +256,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
   }
 }
 
-// Handles websockets requests
+// Handles websockets requests & passes messages to handleWebSocketMessage()
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   switch (type) {
     case WS_EVT_CONNECT:
@@ -266,12 +307,12 @@ void setup() {
   initLittleFS();
   initWebSocket();
 
-  // Serves root URL
+  // Serves root URL (static files)
   serveRootURL();
   // Start server
   server.begin();
 
-  // BMP Tests
+  // BMP Tests in console
   startBMP();
   Serial.print("Start temperature = ");
   Serial.print(start_temp);
@@ -284,7 +325,7 @@ void setup() {
   Serial.println(" m");
   Serial.println();
 
-  // Servo Tests
+  // Servo Tests - could've been an interface button but not necessary, just need to simulate a flight by hand
   if (test_servo) {
     // test open & close servo
     parachute_servo.write(parachute_servo_open_pos);
@@ -301,38 +342,15 @@ void setup() {
 void loop() {
   // Note: non-blocking code wasn't mandatory (still cleaner) because webserver is asynchronous
 
-  // Stop and start flight on user demand
+  // Init and start new flight on user demand
   if (start_flight) {
-    // Initiate variables
-    startBMP();
-    apogee_alt = 0.0;
-    max_alt = 0.0;
-    launched = false;
-    apogee_detected = false;
-    logging = false;
-    timer_abs = millis();
-    timer_relative = 0;
-
-    // File creation with start variables (incl temperature)
-    File file = LittleFS.open("/data.csv", "w");
-    file.println("time,pressure,altitude,temperature");
-    file.print(0);
-    file.print(",");
-    file.print(start_pres, 2); // Print float with 2 decimal places
-    file.print(",");
-    file.print(0.00, 2);
-    file.print(",");
-    file.print(start_temp, 2);
-    file.println();
-    file.close();
-
-    // Change state
+    startFlight();
     start_flight = false;
-    flight_triggered = true;
-
-    // Send new apogee (0.0) & flight_triggered true to client
-    notifyClients((String) flight_triggered);
-    notifyClients((String) apogee_alt);
+  }
+  // Stop flight on user demand
+  if (stop_flight) {
+    stopFlight();
+    stop_flight = false;
   }
 
   // If flight triggered
@@ -380,17 +398,6 @@ void loop() {
         logData();
       }
     }
-  }
-
-  // Stop flight on user demand
-  if (stop_flight) {
-    // Change state
-    stop_flight = false;
-    flight_triggered = false;
-
-    // Send new apogee (probably 0.0) & flight_triggered false to client
-    notifyClients((String) flight_triggered);
-    notifyClients((String) apogee_alt);
   }
 
   // Limits number of connected clients (disconnects oldest if too many clients)
