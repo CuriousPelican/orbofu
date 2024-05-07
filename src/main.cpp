@@ -23,7 +23,7 @@ const char* password = NULL;
 // #define BMP_CS 10
 
 // Servo pin, if you want to use a servo other than the sg90, edit the initServo() function
-#define Parachute_Servo_Pin 22
+#define Parachute_Servo_Pin 17
 // Servo open & close positions in ° (open = parachute released, close = parachute still in rocket)
 int parachute_servo_open_pos = 90;
 int parachute_servo_close_pos = 0;
@@ -134,87 +134,6 @@ void initLittleFS() {
 
 
 
-// -------------------------------- HELPER FUNCTIONS --------------------------------
-
-// bmp.temperature; // return temperature in °C
-// bmp.pressure / 100.0F; // returns pressure in hPa
-
-// returns relative altitude (in m) & changes pres variable
-float getAltitude() {
-  // BMP_3XX Barometric Formula (or Pressure Altitude Formula)
-  // return bmp.readAltitude(SeaLevelPressure_hPa) - start_abs_alt;
-
-  // Improved version, see https://en.wikipedia.org/wiki/Barometric_formula
-  pres = bmp.pressure / 100.0F;
-  return (273.15 + start_temp) / 0.0065 * (1.0 - pow(pres / start_pres, 0.1903));
-}
-
-// Starts BMP sensors & updates start_ variables
-void startBMP(){
-  if (! bmp.performReading()) {
-    Serial.println("Failed to perform reading :(");
-    return;
-  }
-  start_temp = bmp.temperature; // return temperature in °C
-  start_pres = bmp.pressure / 100.0F; // returns pressure in hPa
-  start_abs_alt = bmp.readAltitude(SeaLevelPressure_hPa); //returns approximative absolute altitude
-}
-
-// Logs in data.csv relative_time,pres,alt, (last row reserved for 1st data point with temperature)
-void logData() {
-  File file = LittleFS.open("/data.csv", "a");
-  file.print(timer_relative);
-  file.print(",");
-  file.print(pres, 2);
-  file.print(",");
-  file.print(alt, 2);
-  file.println(",,");
-  file.close();
-}
-
-// Meant to be used in the loop
-// Initializes flight variables & file (flushing preceding) + changes flight_triggered & notifies client
-void startFlight() {
-    // Initiate variables
-  startBMP();
-  apogee_alt = 0.0;
-  max_alt = 0.0;
-  launched = false;
-  apogee_detected = false;
-  logging = false;
-  timer_abs = millis();
-  timer_relative = 0;
-    // File creation with start variables (incl temperature)
-  File file = LittleFS.open("/data.csv", "w");
-  file.println("time,pressure,altitude,temperature");
-  file.print(0);
-  file.print(",");
-  file.print(start_pres, 2); // Print float with 2 decimal places
-  file.print(",");
-  file.print(0.00, 2);
-  file.print(",");
-  file.print(start_temp, 2);
-  file.println();
-  file.close();
-    // Change state
-  flight_triggered = true;
-    // Send new apogee (0.0) & flight_triggered true to client
-  notifyClients((String) flight_triggered);
-  delay(30);
-  notifyClients((String) apogee_alt);
-}
-
-// Meant to be used in the loop - Changes flight_triggered & notifies client
-void stopFlight() {
-    // Change state
-  flight_triggered = false;
-    // Send new apogee (probably 0.0) & flight_triggered false to client
-  notifyClients((String) flight_triggered);
-  notifyClients((String) apogee_alt);
-}
-
-
-
 // -------------------------------- WEBSERVER FUNCTIONS --------------------------------
 // See https://github.com/me-no-dev/ESPAsyncWebServer for docs
 
@@ -289,6 +208,87 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 
 
 
+// -------------------------------- HELPER FUNCTIONS --------------------------------
+
+// bmp.temperature; // return temperature in °C
+// bmp.pressure / 100.0F; // returns pressure in hPa
+
+// returns relative altitude (in m) & changes pres variable
+float getAltitude() {
+  // BMP_3XX Barometric Formula (or Pressure Altitude Formula)
+  // return bmp.readAltitude(SeaLevelPressure_hPa) - start_abs_alt;
+
+  // Improved version, see https://en.wikipedia.org/wiki/Barometric_formula
+  pres = bmp.pressure / 100.0F;
+  return (273.15 + start_temp) / 0.0065 * (1.0 - pow(pres / start_pres, 0.1903));
+}
+
+// Starts BMP sensors & updates start_ variables
+void startBMP(){
+  if (!bmp.performReading()) {
+    Serial.println("Failed to perform reading :(");
+    return;
+  }
+  start_temp = bmp.temperature; // return temperature in °C
+  start_pres = bmp.pressure / 100.0F; // returns pressure in hPa
+  start_abs_alt = bmp.readAltitude(SeaLevelPressure_hPa); //returns approximative absolute altitude
+}
+
+// Logs in data.csv relative_time,pres,alt, (last row reserved for 1st data point with temperature)
+void logData() {
+  File file = LittleFS.open("/data.csv", "a");
+  file.print(timer_relative);
+  file.print(",");
+  file.print(pres, 2);
+  file.print(",");
+  file.print(alt, 2);
+  file.println(",,");
+  file.close();
+}
+
+// Meant to be used in the loop
+// Initializes flight variables & file (flushing preceding) + changes flight_triggered & notifies client
+void startFlight() {
+    // Initiate variables
+  startBMP();
+  apogee_alt = 0.0;
+  max_alt = 0.0;
+  launched = false;
+  apogee_detected = false;
+  logging = false;
+  timer_abs = millis();
+  timer_relative = 0;
+    // File creation with start variables (incl temperature)
+  File file = LittleFS.open("/data.csv", "w");
+  file.println("time,pressure,altitude,temperature");
+  file.print(0);
+  file.print(",");
+  file.print(start_pres, 2); // Print float with 2 decimal places
+  file.print(",");
+  file.print(0.00, 2);
+  file.print(",");
+  file.print(start_temp, 2);
+  file.println();
+  file.close();
+    // Change state
+  flight_triggered = true;
+    // Send new apogee (0.0) & flight_triggered true to client
+  notifyClients((String) flight_triggered);
+  delay(30);
+  notifyClients((String) apogee_alt);
+}
+
+// Meant to be used in the loop - Changes flight_triggered & notifies client
+void stopFlight() {
+    // Change state
+  flight_triggered = false;
+    // Send new apogee (probably 0.0) & flight_triggered false to client
+  notifyClients((String) flight_triggered);
+  notifyClients((String) apogee_alt);
+}
+
+
+
 // -------------------------------- SETUP --------------------------------
 
 // Initialize Websocket
@@ -299,8 +299,10 @@ void initWebSocket() {
 
 void setup() {
   Serial.begin(460800);
-  Serial.println("Setup started !");
+  while (!Serial);
+  Serial.println("\nSetup started !");
 
+  delay(100);
   initBMP();
   initWiFi();
   initServo();
@@ -312,6 +314,7 @@ void setup() {
   // Start server
   server.begin();
 
+  delay(100);
   // BMP Tests in console
   startBMP();
   Serial.print("Start temperature = ");
