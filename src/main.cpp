@@ -210,14 +210,19 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 
 // -------------------------------- HELPER FUNCTIONS --------------------------------
 
+// call bmp.performReading() to refresh measures
 // bmp.temperature; // return temperature in °C
 // bmp.pressure / 100.0F; // returns pressure in hPa
 
 // returns relative altitude (in m) & changes pres variable
 float getAltitude() {
   // BMP_3XX Barometric Formula (or Pressure Altitude Formula)
+  // uses performReading() so no need to call it before to refresh 
   // return bmp.readAltitude(SeaLevelPressure_hPa) - start_abs_alt;
-
+  if (!bmp.performReading()) {
+    Serial.println("Failed to perform reading :(");
+    return;
+  }
   // Improved version, see https://en.wikipedia.org/wiki/Barometric_formula
   pres = bmp.pressure / 100.0F;
   return (273.15 + start_temp) / 0.0065 * (1.0 - pow(pres / start_pres, 0.1903));
