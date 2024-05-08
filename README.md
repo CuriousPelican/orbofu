@@ -18,11 +18,12 @@ Easily built a water rocket flight computer with cheap and available parts and l
 
 ### Bill Of Materials
 
-- ESP32 - I use a DFrobot firebeetle ESP32-E (DFR0654) but other esp32 should work with some modifications to the pins in main.cpp & config in platformio.ini.
+- DFrobot firebeetle 2 ESP32-E (DFR0654) but other esp32 should work with some modifications to the pins in main.cpp & config in platformio.ini.
   - Note: I tried first using a lolin S3 pro and a C3 pico because they were great on paper (connect over usb-C, dedicated I²C port, battery port with charging circuit, ...) but didn't work :( (mainly because of the non Qwiic I²C port not much ressources where available online)
-- BME390 barometric sensor (used as altimeter) - Cheaper less accurate alternatives like the BME388 should work
+- BME390 barometric sensor (used as altimeter) or BME388 (cheaper but less accurate). I tried the official adafruit sensors, both worked but a no name BMP390L from aliexpress did not.
 - Cheap & lightweight sg90 Servomotor (other should work too but you will probably have to edit main.cpp)
 - 3.7V small battery (I used 250mAh ones) - **BE CAREFUL WITH THE POLARITY**
+- If you want easy connections (I do) you can use stemma to dupont for the BMP
 
 Price estimate: not sure for now
 
@@ -45,6 +46,14 @@ I plan to use raketfuedrockets' Phoenix 3D or aircommandrockets' modified versio
 - connect to the web interface, get the rocket ready and press "arm"
 - launch the rocket, orbofu will now log data and trigger the parachute at the right time (hopefully)
 - reconnect to the web interface when you get your rocket back, **DOWNLOAD LAST FLIGHT DATA** if you want to keep it and start again if you want to
+
+- you can also press the other-than-reset button (27) to change the state of flight (armed or not)
+
+### Led info
+
+- red led with battery icon is related to, well, battery (see dfrobot docs)
+- green led aside usb-c connector (D9) indicates arm flight status (green if armed, off is not)
+- rgb led in the middle of the board (D8, ws2812) indicates error. For now only BMP error in blue, **DO NOT PROCEED if this led is blue** as the parachute may not deploy ! Press the reset button & verify connections
 
 # Ressources used & useful links
 
