@@ -32,7 +32,7 @@ int parachute_servo_close_pos = 0;
 const int MAX_DATA_POINTS = 3000; // X is the max number of data points to be logged for one flight
   // Not in use, could do more harm than good
 // const int MAX_TIME_PARACHUTE = ; // X ms is the max time before parachute will open after detecting launch even if apogee detection failed
-const int LOOP_PERIOD = 20; // X ms is the period of the main loop - MUST BE THE SAME AS THE BMP DATA RATE PERIOD
+const int LOOP_PERIOD = 667; // X ms is the period of the main loop - MUST BE THE SAME AS THE BMP DATA RATE PERIOD
 
 // Margins
 const float LAUNCH_MARGIN = 1.0; // X m needs to change in the positive direction for a launch to be detected
@@ -111,7 +111,8 @@ void initBMP(){
   bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
   // T_measure [µs] = 234 + 392 {pressure} + 163 {T} + 2020*(number of temperature & pressure measures including oversampling)
   // MUST BE THE SAME AS THE LOOP_PERIOD (frequency = 1/period)
-  bmp.setOutputDataRate(BMP3_ODR_50_HZ);
+  // can be 200,100,50,25,12_5,6_25,3_1,1_5,0_78,0_39,0_2,0_1,0_05,0_02,0_01,0_006,0_003,0_001
+  bmp.setOutputDataRate(BMP3_ODR_1_5_HZ); // Defaults to 50
   Serial.println("\n[BMP] BMP Initilized !");
 }
 
@@ -281,6 +282,7 @@ void startFlight() {
   notifyClients((String) flight_triggered);
   delay(30);
   notifyClients((String) apogee_alt);
+  Serial.println("[function check] startFlight() triggered");
 }
 
 // Meant to be used in the loop - Changes flight_triggered & notifies client
@@ -290,6 +292,7 @@ void stopFlight() {
     // Send new apogee (probably 0.0) & flight_triggered false to client
   notifyClients((String) flight_triggered);
   notifyClients((String) apogee_alt);
+  Serial.println("[function check] stopFlight() triggered");
 }
 
 
@@ -341,6 +344,9 @@ void setup() {
     parachute_servo.write(parachute_servo_close_pos);
     delay(2000);
   }
+
+  delay(5000);
+  start_flight = true;
 }
 
 
@@ -364,7 +370,7 @@ void loop() {
   // If flight triggered
   if (flight_triggered) {
     if (millis() > timer_abs) {
-      // Avoid too many checks
+      // Avoid too many checks, when to do a new measure
       timer_abs = millis()+LOOP_PERIOD;
       if (launched) {
         timer_relative = millis()-timer_start_abs; // = timer_relative+LOOP_PERIOD maybe less precise ?
@@ -374,6 +380,7 @@ void loop() {
       float last_alt = alt;
       // float last_pres = pres;
       alt = getAltitude();
+      Serial.println(alt);
 
       // Check for a launch
       if (!launched && (alt>=LAUNCH_MARGIN)) {
@@ -381,6 +388,7 @@ void loop() {
         logging = true; // Start logging data
         timer_start_abs = millis()-LOOP_PERIOD; // Started one iteration before
         timer_relative = LOOP_PERIOD;
+        Serial.println("[main loop] Launch detected");
       }
 
       // Check if altitude is higher than max altitude
@@ -392,13 +400,18 @@ void loop() {
         apogee_detected = true;
         apogee_alt = max_alt;
         parachute_servo.write(parachute_servo_open_pos);
+        Serial.println("[main loop] Apogee detected");
+        Serial.print("[main loop] Apogee is ");
+        Serial.print(apogee_alt);
+        Serial.println(" m");
       }
 
       // Check if landed
-      if (launched && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.01)){
+      if (launched && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.1)){
         logging = false;
         flight_triggered = false;
         notifyClients((String) apogee_alt);
+        Serial.println("[main loop] Touchdown detected");
       }
 
       // Calling logging function
