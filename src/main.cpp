@@ -44,6 +44,10 @@ bool test_servo = false;
 
 // -------------------------------- DEFINITIONS --------------------------------
 
+// Pins definition
+#define ledPin D9 //onboard led, on if BMP error
+#define buttonPin 27 //onboard button, use to arm flight
+
 // BMP definition
 #define SeaLevelPressure_hPa (1013.25)
 Adafruit_BMP3XX bmp;
@@ -123,7 +127,7 @@ void initBMP(){
 void initServo() {
   parachute_servo.setPeriodHertz(50); // PWM frequency for SG90
   // Minimum and maximum pulse width (in µs) from 0° to 180°
-  // datasheet SG90: 500,2400 | myservo: 800,2500
+  // datasheet SG90: 500,2400 | MY SG90: 800,2500
   parachute_servo.attach(Parachute_Servo_Pin, 800, 2500);
   Serial.println("\n[Servo] Servo Initilized !");
 }
@@ -166,13 +170,11 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     data[len] = 0;
     message = (char*) data; // converts 8-bit unsigned integers to char
     if (message == "true") {
-      flight_triggered = true;
-      notifyClients("true");
+      start_flight = true;
       Serial.println("\n[WebSocket] Confirmation Flight Armed");
     }
     else if (message == "false") {
-      flight_triggered = false;
-      notifyClients("false");
+      stop_flight = false;
       Serial.println("\n[WebSocket] Confirmation Flight Disarmed");
     }
     else {
@@ -284,6 +286,7 @@ void startFlight() {
   file.close();
     // Change state
   flight_triggered = true;
+  digitalWrite(ledPin, HIGH);
     // Send new apogee (0.0) & flight_triggered true to client
   notifyClients((String) flight_triggered);
   delay(30);
@@ -295,6 +298,7 @@ void startFlight() {
 void stopFlight() {
     // Change state
   flight_triggered = false;
+  digitalWrite(ledPin, LOW);
     // Send new apogee (probably 0.0) & flight_triggered false to client
   notifyClients((String) flight_triggered);
   notifyClients((String) apogee_alt);
@@ -316,6 +320,10 @@ void setup() {
   while (!Serial);
   Serial.println("\nSetup started !");
 
+  pinMode(ledPin, OUTPUT);
+  pinMode(buttonPin, INPUT);
+  digitalWrite(ledPin, LOW);
+
   delay(100);
   initBMP();
   initWiFi();
@@ -328,7 +336,7 @@ void setup() {
   // Start server
   server.begin();
 
-  delay(200);
+  delay(100);
   // BMP Tests in console
   startBMP();
   Serial.print("Start temperature = ");
@@ -419,8 +427,7 @@ void loop() {
       // Check if landed
       if (launched && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.1)){
         logging = false;
-        flight_triggered = false;
-        notifyClients((String) apogee_alt);
+        stopFlight();
         Serial.println("[main loop] Touchdown detected");
       }
 
