@@ -52,6 +52,7 @@ Adafruit_BMP3XX bmp;
 float alt;
 float temp;
 float pres;
+float abs_alt;
 
 float start_abs_alt;
 float start_temp;
@@ -105,7 +106,9 @@ void initBMP(){
     Serial.println("\n[BMP] Could not find a valid BMP3XX sensor, check wiring !");
     while (1);
   }
-  // Set up oversampling and filter initialization - see oversampling & measurement sections of BMPXXX datasheet
+  // Set up oversampling and filter initialization
+  // see oversampling & measurement sections of BMPXXX datasheet
+  // possible values: https://github.com/adafruit/Adafruit_BMP3XX/blob/master/Adafruit_BMP3XX.cpp
   bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_2X);
   bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
   bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
@@ -119,7 +122,9 @@ void initBMP(){
 // Initialize Servo
 void initServo() {
   parachute_servo.setPeriodHertz(50); // PWM frequency for SG90
-  parachute_servo.attach(Parachute_Servo_Pin, 500, 2400); // Minimum and maximum pulse width (in µs) from 0° to 180°
+  // Minimum and maximum pulse width (in µs) from 0° to 180°
+  // datasheet SG90: 500,2400 | myservo: 800,2500
+  parachute_servo.attach(Parachute_Servo_Pin, 800, 2500);
   Serial.println("\n[Servo] Servo Initilized !");
 }
 
@@ -238,6 +243,7 @@ void startBMP(){
   start_temp = bmp.temperature; // return temperature in °C
   start_pres = bmp.pressure / 100.0F; // returns pressure in hPa
   start_abs_alt = bmp.readAltitude(SeaLevelPressure_hPa); //returns approximative absolute altitude
+  abs_alt = start_abs_alt;
 }
 
 // Logs in data.csv relative_time,pres,alt, (last row reserved for 1st data point with temperature)
@@ -322,7 +328,7 @@ void setup() {
   // Start server
   server.begin();
 
-  delay(100);
+  delay(200);
   // BMP Tests in console
   startBMP();
   Serial.print("Start temperature = ");
@@ -376,11 +382,15 @@ void loop() {
         timer_relative = millis()-timer_start_abs; // = timer_relative+LOOP_PERIOD maybe less precise ?
       }
 
-      // Get the altitude
+      // Get the altitude (& updates pres pressure value)
       float last_alt = alt;
-      // float last_pres = pres;
       alt = getAltitude();
-      Serial.println(alt);
+      abs_alt = bmp.readAltitude(SeaLevelPressure_hPa);
+      Serial.print("[Altitude] Homemade: ");
+      Serial.print(alt);
+      Serial.print(" m | BMP_3XX: ");
+      Serial.print(abs_alt-start_abs_alt);
+      Serial.println(" m");
 
       // Check for a launch
       if (!launched && (alt>=LAUNCH_MARGIN)) {
