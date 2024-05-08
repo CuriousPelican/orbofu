@@ -121,14 +121,26 @@ downloadbutton.addEventListener("click", () => {
 // Action on start button - send "true" to server
 const startbutton = document.getElementById("start-button");
 startbutton.addEventListener("click", () => {
-  console.log("Start button triggered");
-  websocket.send("true");
-  // do not change local state of flight_triggered, wait for server confimation
+  const confirmstart = confirm(
+    "Start a new flight ?\nWARNING: Latest flight data WILL be lost !"
+  );
+  if (confirmstart) {
+    console.log("Start button triggered");
+    websocket.send("true");
+    // do not change local state of flight_triggered, wait for server confimation
+  } else {
+    console.log("Start button canceled");
+  }
 });
 
 // Action on stop button - send "false" to server
 const stopbutton = document.getElementById("stop-button");
 stopbutton.addEventListener("click", () => {
-  console.log("Stop button triggered");
-  websocket.send("false");
+  const confirmstop = confirm("Cancel the flight ? (No data will be lost)");
+  if (confirmstop) {
+    console.log("Stop button triggered");
+    websocket.send("false");
+  } else {
+    console.log("Stop button canceled");
+  }
 });
