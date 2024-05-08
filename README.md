@@ -48,12 +48,14 @@ I plan to use raketfuedrockets' Phoenix 3D or aircommandrockets' modified versio
 - reconnect to the web interface when you get your rocket back, **DOWNLOAD LAST FLIGHT DATA** if you want to keep it and start again if you want to
 
 - you can also press the other-than-reset button (27) to change the state of flight (armed or not)
+  - Note: don't spam button (no web interface but it shoud be harder :) ), may led to a restart (no worries, a restart should'nt cause any problems)
 
-### Led info
+### Led & errors info
 
 - red led with battery icon is related to, well, battery (see dfrobot docs)
 - green led aside usb-c connector (D9) indicates arm flight status (green if armed, off is not)
-- rgb led in the middle of the board (D8, ws2812) indicates error. For now only BMP error in blue, **DO NOT PROCEED if this led is blue** as the parachute may not deploy ! Press the reset button & verify connections
+- rgb led in the middle of the board (D8, ws2812) indicates error. For now only BMP error in blue-ish, **DO NOT PROCEED if this led is blue** as the parachute may not deploy ! Press the reset button & verify connections (fyi cyan means failed reading, magenta means failed initilalization & led is reset when starting new flight)
+- to test if servo working correctly: it shoud do a back and forth when starting (arming) flight
 
 # Ressources used & useful links
 

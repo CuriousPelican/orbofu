@@ -104,6 +104,7 @@ function onMessage(event) {
     update_page();
   } else if (isConvertibleToFloat(message)) {
     apogee = parseFloat(message);
+    update_page();
   } else {
     console.log(
       "Websocket Message received but not true, false or apogee altitude, ignoring"

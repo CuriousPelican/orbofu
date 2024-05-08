@@ -7,6 +7,7 @@
 #include <ESP32Servo.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <FastLED.h> // rgb ws2812
 
 
 
@@ -23,10 +24,10 @@ const char* password = NULL;
 // #define BMP_CS 10
 
 // Servo pin, if you want to use a servo other than the sg90, edit the initServo() function
-#define Parachute_Servo_Pin 17
+#define Parachute_Servo_Pin 18
 // Servo open & close positions in ° (open = parachute released, close = parachute still in rocket)
-int parachute_servo_open_pos = 90;
-int parachute_servo_close_pos = 0;
+int parachute_servo_open_pos = 0;
+int parachute_servo_close_pos = 85;
 
 // Times
 const int MAX_DATA_POINTS = 3000; // X is the max number of data points to be logged for one flight
@@ -44,13 +45,29 @@ bool test_servo = false;
 
 // -------------------------------- DEFINITIONS --------------------------------
 
-// Pins definition
-#define ledPin D9 //onboard led, on if BMP error
-#define buttonPin 27 //onboard button, use to arm flight
+// Onboard pins definition
+#define ledPin D9 // onboard led, on if flight_triggered=true
+#define buttonPin 27 // onboard button, use to arm/disarm flight
+#define rgb_ledPin D8 // onboard rgb led (1 ws2812) 
+#define NUM_LEDS 1 // Number of RGB LEDs
+#define LED_TYPE NEOPIXEL // RGB LED strip type
+
+// rgb led strip definition
+CRGB leds[NUM_LEDS];
 
 // BMP definition
 #define SeaLevelPressure_hPa (1013.25)
 Adafruit_BMP3XX bmp;
+
+// SG90 Servo definition
+Servo parachute_servo;
+int servo_min_pw = 800;  // Minimum and maximum pulse width (in µs) from 0° to 180°
+int servo_max_pw = 2500;  // datasheet SG90: 500,2400 | MY SG90: 800,2500
+
+
+// AsyncWebServer server & websocket definition
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
 // Altimeter variables definition
 float alt;
@@ -79,16 +96,8 @@ unsigned int timer_start_abs;
 const int MAX_TIME_LOGGING = MAX_DATA_POINTS*LOOP_PERIOD; // time in ms after which logging will stop, default 60s
 bool logging = false; // True when logging data - not a setting to disable/enable data logging !
 
-// SG90 Servo definition
-Servo parachute_servo;
-
-// AsyncWebServer server & websocket definition
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
-
 // message variable to store messages between client & server definition
 String message = "";
-
 
 
 // -------------------------------- INITILIZATIONS --------------------------------
@@ -108,6 +117,8 @@ void initBMP(){
   //if (! bmp.begin_SPI(BMP_CS)) {  // hardware SPI mode  
   //if (! bmp.begin_SPI(BMP_CS, BMP_SCK, BMP_MISO, BMP_MOSI)) {  // software SPI mode
     Serial.println("\n[BMP] Could not find a valid BMP3XX sensor, check wiring !");
+    leds[0] = CRGB(166,0,255);
+    FastLED.show();
     while (1);
   }
   // Set up oversampling and filter initialization
@@ -126,9 +137,7 @@ void initBMP(){
 // Initialize Servo
 void initServo() {
   parachute_servo.setPeriodHertz(50); // PWM frequency for SG90
-  // Minimum and maximum pulse width (in µs) from 0° to 180°
-  // datasheet SG90: 500,2400 | MY SG90: 800,2500
-  parachute_servo.attach(Parachute_Servo_Pin, 800, 2500);
+  parachute_servo.attach(Parachute_Servo_Pin, servo_min_pw, servo_max_pw);
   Serial.println("\n[Servo] Servo Initilized !");
 }
 
@@ -174,7 +183,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
       Serial.println("\n[WebSocket] Confirmation Flight Armed");
     }
     else if (message == "false") {
-      stop_flight = false;
+      stop_flight = true;
       Serial.println("\n[WebSocket] Confirmation Flight Disarmed");
     }
     else {
@@ -193,7 +202,12 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       Serial.print(" connected from ");
       Serial.println(client->remoteIP());
       // Notify client of latest apogee when it first connects
-      notifyClients((String) flight_triggered);
+      if (flight_triggered) {
+        notifyClients("true");
+      }
+      else {
+        notifyClients("false");
+      }
       notifyClients((String) apogee_alt); // Not most efficient conversion compared to dtostrf but no import needed
       break;
     case WS_EVT_DISCONNECT:
@@ -228,7 +242,9 @@ float getAltitude() {
   // uses performReading() so no need to call it before to refresh 
   // return bmp.readAltitude(SeaLevelPressure_hPa) - start_abs_alt;
   if (!bmp.performReading()) {
-    Serial.println("Failed to perform reading :(");
+    Serial.println("[BMP] Failed to perform reading :(");
+    leds[0] = CRGB(0,136,255);
+    FastLED.show();
     return 0.0;
   }
   // Improved version, see https://en.wikipedia.org/wiki/Barometric_formula
@@ -239,13 +255,31 @@ float getAltitude() {
 // Starts BMP sensors & updates start_ variables
 void startBMP(){
   if (!bmp.performReading()) {
-    Serial.println("Failed to perform reading :(");
+    Serial.println("[BMP] Failed to perform reading :(");
+    leds[0] = CRGB(0,136,255);
+    FastLED.show();
     return;
   }
   start_temp = bmp.temperature; // return temperature in °C
   start_pres = bmp.pressure / 100.0F; // returns pressure in hPa
   start_abs_alt = bmp.readAltitude(SeaLevelPressure_hPa); //returns approximative absolute altitude
   abs_alt = start_abs_alt;
+}
+
+// With parachute_servo attached, does a back and forth around close position to ensure servo working properly & stays to close pos
+void servoCloseTest() {
+  parachute_servo.write(parachute_servo_close_pos);
+  delay(300);
+  parachute_servo.write(parachute_servo_close_pos+10);
+  delay(100);
+  parachute_servo.write(parachute_servo_close_pos-10);
+  delay(100);
+  parachute_servo.write(parachute_servo_close_pos+10);
+  delay(100);
+  parachute_servo.write(parachute_servo_close_pos-10);
+  delay(100);
+  parachute_servo.write(parachute_servo_close_pos);
+  delay(100);
 }
 
 // Logs in data.csv relative_time,pres,alt, (last row reserved for 1st data point with temperature)
@@ -263,6 +297,9 @@ void logData() {
 // Meant to be used in the loop
 // Initializes flight variables & file (flushing preceding) + changes flight_triggered & notifies client
 void startFlight() {
+    // Reset errors
+  leds[0] = CRGB::Black;
+  FastLED.show();
     // Initiate variables
   startBMP();
   apogee_alt = 0.0;
@@ -288,10 +325,13 @@ void startFlight() {
   flight_triggered = true;
   digitalWrite(ledPin, HIGH);
     // Send new apogee (0.0) & flight_triggered true to client
-  notifyClients((String) flight_triggered);
+  notifyClients("true");
   delay(30);
   notifyClients((String) apogee_alt);
   Serial.println("[function check] startFlight() triggered");
+    // Attach servo & tests (to move it by hand)
+  parachute_servo.attach(Parachute_Servo_Pin, servo_min_pw, servo_max_pw);
+  servoCloseTest();
 }
 
 // Meant to be used in the loop - Changes flight_triggered & notifies client
@@ -300,9 +340,22 @@ void stopFlight() {
   flight_triggered = false;
   digitalWrite(ledPin, LOW);
     // Send new apogee (probably 0.0) & flight_triggered false to client
-  notifyClients((String) flight_triggered);
+  notifyClients("false");
   notifyClients((String) apogee_alt);
   Serial.println("[function check] stopFlight() triggered");
+    // Detach servo (to move it by hand)
+  parachute_servo.detach();
+}
+
+// Interupt called on button press stops flight if flight already triggered, otherwise starts it
+void buttonPress() {
+  delay(5); // avoid not full closure of button
+  if (flight_triggered) {
+    stop_flight = true;
+  }
+  else {
+    start_flight = true;
+  }
 }
 
 
@@ -321,8 +374,13 @@ void setup() {
   Serial.println("\nSetup started !");
 
   pinMode(ledPin, OUTPUT);
-  pinMode(buttonPin, INPUT);
   digitalWrite(ledPin, LOW);
+  FastLED.addLeds<LED_TYPE, rgb_ledPin>(leds, NUM_LEDS);
+  leds[0] = CRGB::Black;
+  FastLED.show();
+
+  pinMode(buttonPin, INPUT_PULLUP);
+  attachInterrupt(buttonPin,buttonPress,FALLING); // triggers when button pressed (input pullup)
 
   delay(100);
   initBMP();
@@ -336,6 +394,7 @@ void setup() {
   // Start server
   server.begin();
 
+// redundant tests with start flight
   delay(100);
   // BMP Tests in console
   startBMP();
@@ -349,18 +408,9 @@ void setup() {
   Serial.print(start_abs_alt);
   Serial.println(" m");
   Serial.println();
-
-  // Servo Tests - could've been an interface button but not necessary, just need to simulate a flight by hand
-  if (test_servo) {
-    // test open & close servo
-    parachute_servo.write(parachute_servo_open_pos);
-    delay(2000);
-    parachute_servo.write(parachute_servo_close_pos);
-    delay(2000);
-  }
-
-  delay(5000);
-  start_flight = true;
+  // Test servo & detach (to move it by hand)
+  servoCloseTest();
+  parachute_servo.detach();
 }
 
 
