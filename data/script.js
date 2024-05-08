@@ -120,7 +120,7 @@ downloadbutton.addEventListener("click", () => {
 
 // Action on start button - send "true" to server
 const startbutton = document.getElementById("start-button");
-downloadbutton.addEventListener("click", () => {
+startbutton.addEventListener("click", () => {
   console.log("Start button triggered");
   websocket.send("true");
   // do not change local state of flight_triggered, wait for server confimation
@@ -128,7 +128,7 @@ downloadbutton.addEventListener("click", () => {
 
 // Action on stop button - send "false" to server
 const stopbutton = document.getElementById("stop-button");
-downloadbutton.addEventListener("click", () => {
+stopbutton.addEventListener("click", () => {
   console.log("Stop button triggered");
   websocket.send("false");
 });

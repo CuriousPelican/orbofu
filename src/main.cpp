@@ -221,7 +221,7 @@ float getAltitude() {
   // return bmp.readAltitude(SeaLevelPressure_hPa) - start_abs_alt;
   if (!bmp.performReading()) {
     Serial.println("Failed to perform reading :(");
-    return;
+    return 0.0;
   }
   // Improved version, see https://en.wikipedia.org/wiki/Barometric_formula
   pres = bmp.pressure / 100.0F;
