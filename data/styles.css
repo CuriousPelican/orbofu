@@ -70,20 +70,34 @@ button {
   color: #001858;
   margin-top: 0.5em;
   margin-bottom: 0.5em;
+  transition-duration: 0.4s;
+  -webkit-transition-duration: 0.4s; /* Safari */
+}
+button:active {
+  transition-duration: 0.1s;
 }
 
 #start-button {
   background: #f582ae;
   display: none;
 }
+#start-button:active {
+  background-color: #e76295;
+}
 
 #stop-button {
   background: #8bd3dd;
   display: none;
+}
+#stop-button:active {
+  background-color: #62bdc9;
 }
 
 #download-button {
   background: #001858;
   color: #fef6e4;
   display: none;
+}
+#download-button:active {
+  background-color: #000d31;
 }
