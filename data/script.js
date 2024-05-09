@@ -42,6 +42,7 @@ function onClose(event) {
 // -------------------------------- HELPER FUNCTIONS --------------------------------
 
 // Script to download & rename
+// Not working on esp - might move it to server side by putting everything in a datafiles folder
 function downloadFileWithTimestamp(url) {
   // const fileName = "data.csv";
   // const url = `http://ip/path/to/${fileName}`;
@@ -117,7 +118,14 @@ const downloadbutton = document.getElementById("download-button");
 downloadbutton.addEventListener("click", () => {
   console.log("Download button triggered");
   // ask for download
-  downloadFileWithTimestamp(`http://${window.location.hostname}/data.csv`);
+  // downloadFileWithTimestamp(`http://${window.location.hostname}/data.csv`);
+  const link = document.createElement("a");
+  link.href = "data.csv";
+  link.download = "test.csv";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 });
 
 // Action on start button - send "true" to server
