@@ -33,12 +33,12 @@ int parachute_servo_close_pos = 85;
 const int MAX_DATA_POINTS = 3000; // X is the max number of data points to be logged for one flight
   // Not in use, could do more harm than good
 // const int MAX_TIME_PARACHUTE = ; // X ms is the max time before parachute will open after detecting launch even if apogee detection failed
-const int LOOP_PERIOD = 667; // X ms is the period of the main loop - MUST BE THE SAME AS THE BMP DATA RATE PERIOD
+const int LOOP_PERIOD = 20; // X ms is the period of the main loop - MUST BE THE SAME AS THE BMP DATA RATE PERIOD
 
 // Margins
-const float LAUNCH_MARGIN = 1.0; // X m needs to change in the positive direction for a launch to be detected
-const float APOGEE_MARGIN = 2.0; // X m needs to change from the max alt for apogee detection
-const float TOUCHDOWN_MARGIN = 1.0; // rocket must be X m above ground to trigger touchdown
+const float LAUNCH_MARGIN = 0.3; // rocket must be more than X m above ground to trigger launch
+const float APOGEE_MARGIN = 0.5; // X m needs to change from the max alt for apogee detection
+const float TOUCHDOWN_MARGIN = 1; // rocket must be less than X m above ground to trigger touchdown
 
 // tests & config settings
 bool test_servo = false;
@@ -130,7 +130,7 @@ void initBMP(){
   // T_measure [µs] = 234 + 392 {pressure} + 163 {T} + 2020*(number of temperature & pressure measures including oversampling)
   // MUST BE THE SAME AS THE LOOP_PERIOD (frequency = 1/period)
   // can be 200,100,50,25,12_5,6_25,3_1,1_5,0_78,0_39,0_2,0_1,0_05,0_02,0_01,0_006,0_003,0_001
-  bmp.setOutputDataRate(BMP3_ODR_1_5_HZ); // Defaults to 50
+  bmp.setOutputDataRate(BMP3_ODR_50_HZ); // Defaults to 50
   Serial.println("\n[BMP] BMP Initilized !");
 }
 
@@ -290,7 +290,8 @@ void logData() {
   file.print(pres, 2);
   file.print(",");
   file.print(alt, 2);
-  file.println(",,");
+  file.print(",,");
+  file.println(abs_alt, 2);
   file.close();
 }
 
@@ -323,7 +324,7 @@ void startFlight() {
 
     // File creation with start variables (incl temperature)
   File file = LittleFS.open("/data.csv", "w");
-  file.println("time,pressure,altitude,temperature");
+  file.println("time,pressure,altitude,temperature,abs_alt");
   file.print(0);
   file.print(",");
   file.print(start_pres, 2); // Print float with 2 decimal places
@@ -331,7 +332,8 @@ void startFlight() {
   file.print(0.00, 2);
   file.print(",");
   file.print(start_temp, 2);
-  file.println();
+  file.print(",");
+  file.println(start_abs_alt, 2);
   file.close();
 
     // Change state
@@ -461,7 +463,7 @@ void loop() {
 
   // If flight triggered
   if (flight_triggered) {
-    if (millis() > timer_abs) {
+    if (millis() >= timer_abs) {
       // Avoid too many checks, when to do a new measure
       timer_abs = millis()+LOOP_PERIOD;
       if (launched) {
@@ -472,11 +474,16 @@ void loop() {
       float last_alt = alt;
       alt = getAltitude();
       abs_alt = bmp.readAltitude(SeaLevelPressure_hPa);
-      Serial.print("[Altitude] Homemade: ");
+      // Serial.print("[Altitude] Homemade: ");
+      // Serial.print(alt);
+      // Serial.print(" m | BMP_3XX: ");
+      // Serial.print(abs_alt-start_abs_alt);
+      // Serial.println(" m");
+      Serial.print("[Altitude] Atitude: ");
       Serial.print(alt);
-      Serial.print(" m | BMP_3XX: ");
-      Serial.print(abs_alt-start_abs_alt);
-      Serial.println(" m");
+      Serial.print(" m | Time: ");
+      Serial.print(timer_abs);
+      Serial.println(" ms");
 
       // Check for a launch
       if (!launched && (alt>=LAUNCH_MARGIN)) {
@@ -503,7 +510,7 @@ void loop() {
       }
 
       // Check if landed
-      if (launched && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.1)){
+      if (launched && apogee_detected && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.1)){
         logging = false;
         stopFlight();
         Serial.println("[main loop] Touchdown detected");
