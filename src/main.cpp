@@ -414,13 +414,13 @@ void setup() {
   // Start server
   server.begin();
 
-  // Creates data.csv if non existant to avoid errors
-  File file_exists = LittleFS.open("/data.csv", "r");
-  if (!file_exists) {
+  // Creates data.csv if non existant or too small (<2 bytes, empty file bug) to avoid errors
+  if (!LittleFS.exists("/data.csv") or (LittleFS.open("/data.csv", "r").size())<2) {
+    Serial.println("\n[data.csv] file not existing or empty, creating");
     File file = LittleFS.open("/data.csv", "w");
+    file.println("setup initialized file");
     file.close();
   }
-  file_exists.close();
   
   // Tests
     // BMP Tests in console
