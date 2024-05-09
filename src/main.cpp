@@ -430,6 +430,7 @@ void setup() {
   // Tests
     // BMP Tests in console
   startBMP();
+  delay(100);
   startBMP(); // first measure is false with always same values
   Serial.print("\n[Boot] Start temperature = ");
   Serial.print(start_temp);
