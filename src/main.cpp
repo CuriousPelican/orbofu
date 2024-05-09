@@ -43,6 +43,8 @@ const float TOUCHDOWN_MARGIN = 1; // rocket must be less than X m above ground t
 // tests & config settings
 bool test_servo = false;
 
+
+
 // -------------------------------- DEFINITIONS --------------------------------
 
 // Onboard pins definition
@@ -99,7 +101,7 @@ bool logging = false; // True when logging data - not a setting to disable/enabl
 // message variable to store messages between client & server definition
 String message = "";
 
-// file variable representing data.csv
+// file variable representing orbofudata.csv
 File dataFile;
 
 
@@ -286,7 +288,7 @@ void servoCloseTest() {
   delay(100);
 }
 
-// Logs in data.csv relative_time,pres,alt, (last row reserved for 1st data point with temperature)
+// Logs in already opened file relative_time,pres,alt,,abs_alt (one row reserved for 1st data point with temperature)
 void logData(File file) {
   file.print(timer_relative);
   file.print(",");
@@ -325,7 +327,7 @@ void startFlight() {
   timer_relative = 0;
 
     // File open & add start variables (incl temperature)
-  File dataFile = LittleFS.open("/data.csv", "w");
+  File dataFile = LittleFS.open("/orbofudata.csv", "w");
   dataFile.println("time,pressure,altitude,temperature,abs_alt");
   dataFile.print(0);
   dataFile.print(",");
@@ -420,10 +422,10 @@ void setup() {
   // Start server
   server.begin();
 
-  // Creates data.csv if non existant or too small (<2 bytes, empty file bug) to avoid errors
-  if (!LittleFS.exists("/data.csv") or (LittleFS.open("/data.csv", "r").size())<2) {
-    Serial.println("\n[data.csv] file not existing or empty, creating");
-    File file = LittleFS.open("/data.csv", "w");
+  // Creates orbofudata.csv if non existant or too small (<2 bytes, empty file bug) to avoid errors
+  if (!LittleFS.exists("/orbofudata.csv") or (LittleFS.open("/orbofudata.csv", "r").size())<2) {
+    Serial.println("\n[orbofudata.csv] file not existing or empty, creating");
+    File file = LittleFS.open("/orbofudata.csv", "w");
     file.println("setup initialized file");
     file.close();
   }
