@@ -47,8 +47,9 @@ I plan to use raketfuedrockets' Phoenix 3D or aircommandrockets' modified versio
 - launch the rocket, orbofu will now log data and trigger the parachute at the right time (hopefully)
 - reconnect to the web interface when you get your rocket back, **DOWNLOAD LAST FLIGHT DATA** if you want to keep it and start again if you want to
 
-- you can also press the other-than-reset button (27) to change the state of flight (armed or not)
-  - Note: don't spam button (no web interface but it shoud be harder :) ), may led to a restart (no worries, a restart should'nt cause any problems)
+- you can also press the other-than-reset button (27) to change the state of flight (armed or not)- check the arm flight status green led after pressing !
+  - Note: button actives on button released (more reliable, less prone to bounces)
+  - Note2: only use if unable to use web interface as you won't get flight data without being connected to web interface
 
 ### Led & errors info
 

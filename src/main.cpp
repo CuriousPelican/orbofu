@@ -349,7 +349,7 @@ void stopFlight() {
 
 // Interupt called on button press stops flight if flight already triggered, otherwise starts it
 void buttonPress() {
-  delay(5); // avoid not full closure of button
+  // delay(10); // no real influence on bouncing but may lead to restarts
   if (flight_triggered) {
     stop_flight = true;
   }
@@ -380,7 +380,7 @@ void setup() {
   FastLED.show();
 
   pinMode(buttonPin, INPUT_PULLUP);
-  attachInterrupt(buttonPin,buttonPress,FALLING); // triggers when button pressed (input pullup)
+  attachInterrupt(buttonPin,buttonPress,RISING); // triggers when button pressed (input pullup)
 
   delay(100);
   initBMP();
