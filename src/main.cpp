@@ -99,6 +99,10 @@ bool logging = false; // True when logging data - not a setting to disable/enabl
 // message variable to store messages between client & server definition
 String message = "";
 
+// file variable representing data.csv
+File dataFile;
+
+
 
 // -------------------------------- INITILIZATIONS --------------------------------
 
@@ -283,8 +287,7 @@ void servoCloseTest() {
 }
 
 // Logs in data.csv relative_time,pres,alt, (last row reserved for 1st data point with temperature)
-void logData() {
-  File file = LittleFS.open("/data.csv", "a");
+void logData(File file) {
   file.print(timer_relative);
   file.print(",");
   file.print(pres, 2);
@@ -292,7 +295,6 @@ void logData() {
   file.print(alt, 2);
   file.print(",,");
   file.println(abs_alt, 2);
-  file.close();
 }
 
 // Meant to be used in the loop
@@ -322,19 +324,18 @@ void startFlight() {
   timer_abs = millis();
   timer_relative = 0;
 
-    // File creation with start variables (incl temperature)
-  File file = LittleFS.open("/data.csv", "w");
-  file.println("time,pressure,altitude,temperature,abs_alt");
-  file.print(0);
-  file.print(",");
-  file.print(start_pres, 2); // Print float with 2 decimal places
-  file.print(",");
-  file.print(0.00, 2);
-  file.print(",");
-  file.print(start_temp, 2);
-  file.print(",");
-  file.println(start_abs_alt, 2);
-  file.close();
+    // File open & add start variables (incl temperature)
+  File dataFile = LittleFS.open("/data.csv", "w");
+  dataFile.println("time,pressure,altitude,temperature,abs_alt");
+  dataFile.print(0);
+  dataFile.print(",");
+  dataFile.print(start_pres, 2); // Print float with 2 decimal places
+  dataFile.print(",");
+  dataFile.print(0.00, 2);
+  dataFile.print(",");
+  dataFile.print(start_temp, 2);
+  dataFile.print(",");
+  dataFile.println(start_abs_alt, 2);
 
     // Change state
   flight_triggered = true;
@@ -355,6 +356,9 @@ void stopFlight() {
     // Change state
   flight_triggered = false;
   digitalWrite(ledPin, LOW);
+
+    // File close
+  dataFile.close();
 
     // Send new apogee (probably 0.0) & flight_triggered false to client
   notifyClients("false");
@@ -474,13 +478,10 @@ void loop() {
       float last_alt = alt;
       alt = getAltitude();
       abs_alt = bmp.readAltitude(SeaLevelPressure_hPa);
-      // Serial.print("[Altitude] Homemade: ");
-      // Serial.print(alt);
-      // Serial.print(" m | BMP_3XX: ");
-      // Serial.print(abs_alt-start_abs_alt);
-      // Serial.println(" m");
-      Serial.print("[Altitude] Atitude: ");
+      Serial.print("[Logging] Custom alt: ");
       Serial.print(alt);
+      Serial.print(" m | BMP_3XX alt: ");
+      Serial.print(abs_alt-start_abs_alt);
       Serial.print(" m | Time: ");
       Serial.print(timer_abs);
       Serial.println(" ms");
@@ -509,16 +510,16 @@ void loop() {
         Serial.println(" m");
       }
 
-      // Check if landed
-      if (launched && apogee_detected && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.1)){
+      // Check if landed or rly too long
+      if ((launched && apogee_detected && alt<TOUCHDOWN_MARGIN && ((last_alt-alt)<0.1)) or timer_relative>MAX_TIME_LOGGING){
         logging = false;
         stopFlight();
         Serial.println("[main loop] Touchdown detected");
       }
 
       // Calling logging function
-      if (logging and timer_relative<MAX_TIME_LOGGING) {
-        logData();
+      if (logging) {
+        logData(dataFile);
       }
     }
   }
