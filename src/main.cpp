@@ -36,9 +36,9 @@ const int MAX_DATA_POINTS = 3000; // X is the max number of data points to be lo
 const int LOOP_PERIOD = 20; // X ms is the period of the main loop - MUST BE THE SAME AS THE BMP DATA RATE PERIOD
 
 // Margins
-const float LAUNCH_MARGIN = 0.3; // rocket must be more than X m above ground to trigger launch
+const float LAUNCH_MARGIN = 0.8; // rocket must be more than X m above ground to trigger launch
 const float APOGEE_MARGIN = 0.5; // X m needs to change from the max alt for apogee detection
-const float TOUCHDOWN_MARGIN = 1; // rocket must be less than X m above ground to trigger touchdown
+const float TOUCHDOWN_MARGIN = 0.8; // rocket must be less than X m above ground to trigger touchdown
 
 
 
@@ -324,7 +324,7 @@ void startFlight() {
   timer_relative = 0;
 
     // File open & add start variables (incl temperature)
-  File dataFile = LittleFS.open("/orbofudata.csv", "w");
+  dataFile = LittleFS.open("/orbofudata.csv", "w");
   dataFile.println("time,pressure,altitude,temperature,abs_alt");
   dataFile.print(0);
   dataFile.print(",");
