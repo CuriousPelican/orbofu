@@ -40,9 +40,6 @@ const float LAUNCH_MARGIN = 0.3; // rocket must be more than X m above ground to
 const float APOGEE_MARGIN = 0.5; // X m needs to change from the max alt for apogee detection
 const float TOUCHDOWN_MARGIN = 1; // rocket must be less than X m above ground to trigger touchdown
 
-// tests & config settings
-bool test_servo = false;
-
 
 
 // -------------------------------- DEFINITIONS --------------------------------
