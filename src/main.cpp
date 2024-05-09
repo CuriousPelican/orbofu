@@ -137,7 +137,7 @@ void initBMP(){
 // Initialize Servo
 void initServo() {
   parachute_servo.setPeriodHertz(50); // PWM frequency for SG90
-  parachute_servo.attach(Parachute_Servo_Pin, servo_min_pw, servo_max_pw);
+  // parachute_servo.attach(Parachute_Servo_Pin, servo_min_pw, servo_max_pw);
   Serial.println("\n[Servo] Servo Initilized !");
 }
 
@@ -300,8 +300,19 @@ void startFlight() {
     // Reset errors
   leds[0] = CRGB::Black;
   FastLED.show();
-    // Initiate variables
+
+    // Initiate BMP
   startBMP();
+  Serial.print("\n[Start] Start temperature = ");
+  Serial.print(start_temp);
+  Serial.println(" °C");
+  Serial.print("[Start] Start pressure = ");
+  Serial.print(start_pres);
+  Serial.println(" hPa");
+  Serial.print("[Start] Start approx. altitude = ");
+  Serial.print(start_abs_alt);
+  Serial.println(" m");
+    // Initiate variables
   apogee_alt = 0.0;
   max_alt = 0.0;
   launched = false;
@@ -309,6 +320,7 @@ void startFlight() {
   logging = false;
   timer_abs = millis();
   timer_relative = 0;
+
     // File creation with start variables (incl temperature)
   File file = LittleFS.open("/data.csv", "w");
   file.println("time,pressure,altitude,temperature");
@@ -321,6 +333,7 @@ void startFlight() {
   file.print(start_temp, 2);
   file.println();
   file.close();
+
     // Change state
   flight_triggered = true;
   digitalWrite(ledPin, HIGH);
@@ -329,6 +342,7 @@ void startFlight() {
   delay(30);
   notifyClients((String) apogee_alt);
   Serial.println("[function check] startFlight() triggered");
+
     // Attach servo & tests (to move it by hand)
   parachute_servo.attach(Parachute_Servo_Pin, servo_min_pw, servo_max_pw);
   servoCloseTest();
@@ -339,10 +353,12 @@ void stopFlight() {
     // Change state
   flight_triggered = false;
   digitalWrite(ledPin, LOW);
+
     // Send new apogee (probably 0.0) & flight_triggered false to client
   notifyClients("false");
   notifyClients((String) apogee_alt);
   Serial.println("[function check] stopFlight() triggered");
+
     // Detach servo (to move it by hand)
   parachute_servo.detach();
 }
@@ -369,19 +385,23 @@ void initWebSocket() {
 }
 
 void setup() {
+  // Serial Init
   Serial.begin(460800);
   while (!Serial);
   Serial.println("\nSetup started !");
 
+  // Leds
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, LOW);
   FastLED.addLeds<LED_TYPE, rgb_ledPin>(leds, NUM_LEDS);
   leds[0] = CRGB::Black;
   FastLED.show();
 
+  // Button
   pinMode(buttonPin, INPUT_PULLUP);
   attachInterrupt(buttonPin,buttonPress,RISING); // triggers when button pressed (input pullup)
 
+  // Inits
   delay(100);
   initBMP();
   initWiFi();
@@ -394,21 +414,29 @@ void setup() {
   // Start server
   server.begin();
 
-// redundant tests with start flight
-  delay(100);
-  // BMP Tests in console
+  // Creates data.csv if non existant to avoid errors
+  File file_exists = LittleFS.open("/data.csv", "r");
+  if (!file_exists) {
+    File file = LittleFS.open("/data.csv", "w");
+    file.close();
+  }
+  file_exists.close();
+  
+  // Tests
+    // BMP Tests in console
   startBMP();
-  Serial.print("Start temperature = ");
+  startBMP(); // first measure is false with always same values
+  Serial.print("\n[Boot] Start temperature = ");
   Serial.print(start_temp);
   Serial.println(" °C");
-  Serial.print("Start pressure = ");
+  Serial.print("[Boot] Start pressure = ");
   Serial.print(start_pres);
   Serial.println(" hPa");
-  Serial.print("Start approx. altitude = ");
+  Serial.print("[Boot] Start approx. altitude = ");
   Serial.print(start_abs_alt);
   Serial.println(" m");
-  Serial.println();
-  // Test servo & detach (to move it by hand)
+    // Test servo & detach (to move it by hand)
+  parachute_servo.attach(Parachute_Servo_Pin, servo_min_pw, servo_max_pw);
   servoCloseTest();
   parachute_servo.detach();
 }

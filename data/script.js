@@ -117,6 +117,7 @@ const downloadbutton = document.getElementById("download-button");
 downloadbutton.addEventListener("click", () => {
   console.log("Download button triggered");
   // ask for download
+  downloadFileWithTimestamp(`http://${window.location.hostname}/data.csv`);
 });
 
 // Action on start button - send "true" to server
