@@ -58,9 +58,7 @@ I plan to use raketfuedrockets' Phoenix 3D or aircommandrockets' modified versio
 - rgb led in the middle of the board (D8, ws2812) indicates error. For now only BMP error in blue-ish, **DO NOT PROCEED if this led is blue** as the parachute may not deploy ! Press the reset button & verify connections (fyi cyan means failed reading, magenta means failed initilalization & led is reset when starting new flight)
 - to test if servo working correctly: it shoud do a back and forth when starting (arming) flight
 
-# Ressources used & useful links
-
-### A small footnote about github copilot
+## A small footnote about github copilot
 
 Any use of this project's code by GitHub Copilot, past or present, is done without my permission. I do not consent to GitHub's use of this project's code in Copilot.
 
